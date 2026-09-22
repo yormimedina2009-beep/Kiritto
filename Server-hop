@@ -1,0 +1,1269 @@
+-- ================================================================
+--   ██╗  ██╗██╗██████╗ ██╗████████╗████████╗ ██████╗ 
+--   ██║ ██╔╝██║██╔══██╗██║╚══██╔══╝╚══██╔══╝██╔═══██╗
+--   █████╔╝ ██║██████╔╝██║   ██║      ██║   ██║   ██║
+--   ██╔═██╗ ██║██╔══██╗██║   ██║      ██║   ██║   ██║
+--   ██║  ██╗██║██║  ██║██║   ██║      ██║   ╚██████╔╝
+--   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝╚═╝   ╚═╝      ╚═╝    ╚═════╝ 
+--              KIRITTO.HUB  |  TikTok: @kiritto.hub
+-- ================================================================
+
+-- ─── Servicios ────────────────────────────────────────────────
+local CoreGui          = game:GetService("CoreGui")
+local Players          = game:GetService("Players")
+local TweenService     = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local HttpService      = game:GetService("HttpService")
+local TeleportService  = game:GetService("TeleportService")
+local LocalPlayer      = Players.LocalPlayer
+
+-- ─── Configuración ────────────────────────────────────────────
+local KEY_VALIDA  = "KEY-KIRITTO.HUB-2026-PERMANENTE"
+local KEY_FILE    = "kiritto_key.txt"
+local CONFIG_FILE = "kiritto_config.txt"
+
+-- ─── Paleta de colores ────────────────────────────────────────
+local C = {
+    bg      = Color3.fromRGB(11, 11, 18),
+    panel   = Color3.fromRGB(22, 22, 34),
+    panel2  = Color3.fromRGB(30, 30, 46),
+    accent  = Color3.fromRGB(168, 85, 247),
+    accent2 = Color3.fromRGB(236, 72, 153),
+    text    = Color3.fromRGB(245, 245, 255),
+    sub     = Color3.fromRGB(150, 150, 178),
+    success = Color3.fromRGB(52, 211, 153),
+    error   = Color3.fromRGB(248, 113, 113),
+    warn    = Color3.fromRGB(251, 191, 36),
+    stroke  = Color3.fromRGB(58, 58, 88),
+}
+
+-- ─── Helper para crear instancias ─────────────────────────────
+local function create(class, props, children)
+    local inst = Instance.new(class)
+    for k, v in pairs(props or {}) do
+        if k ~= "Parent" then inst[k] = v end
+    end
+    for _, c in ipairs(children or {}) do
+        c.Parent = inst
+    end
+    if props and props.Parent then inst.Parent = props.Parent end
+    return inst
+end
+
+local function corner(parent, r)  return create("UICorner", {CornerRadius = UDim.new(0, r or 8), Parent = parent}) end
+local function stroke(parent, col, th) return create("UIStroke", {Color = col or C.stroke, Thickness = th or 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = parent}) end
+local function gradient(parent, c1, c2, rot)
+    return create("UIGradient", {Color = ColorSequence.new(c1, c2), Rotation = rot or 0, Parent = parent})
+end
+
+-- ─── Guardado / Lectura de archivos ───────────────────────────
+local function leerArchivo(nombre)
+    if not (readfile and isfile) then return nil end
+    local ok, contenido = pcall(function()
+        if isfile(nombre) then return readfile(nombre) end
+    end)
+    if ok and contenido and #contenido > 0 then return contenido end
+    return nil
+end
+
+local function escribirArchivo(nombre, contenido)
+    if writefile then pcall(function() writefile(nombre, contenido) end) end
+end
+
+local function borrarArchivo(nombre)
+    if delfile and isfile then pcall(function() if isfile(nombre) then delfile(nombre) end end) end
+end
+
+local function leerKeyGuardada() return leerArchivo(KEY_FILE) end
+local function guardarKey(k) escribirArchivo(KEY_FILE, k) end
+local function borrarKeyGuardada() borrarArchivo(KEY_FILE) end
+
+-- ─── Limpiar GUI previa ───────────────────────────────────────
+pcall(function()
+    if CoreGui:FindFirstChild("KirittoHub") then CoreGui.KirittoHub:Destroy() end
+    if LocalPlayer.PlayerGui:FindFirstChild("KirittoHub") then LocalPlayer.PlayerGui.KirittoHub:Destroy() end
+end)
+
+-- ─── Parent GUI (compatible Delta) ────────────────────────────
+local parentGui
+pcall(function() parentGui = (gethui and gethui()) or CoreGui end)
+if not parentGui then parentGui = LocalPlayer:WaitForChild("PlayerGui") end
+
+local screenGui = create("ScreenGui", {
+    Name = "KirittoHub",
+    ResetOnSpawn = false,
+    IgnoreGuiInset = true,
+    ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+    Parent = parentGui,
+})
+
+-- ================================================================
+--  1) ANIMACIÓN DE CARGA
+-- ================================================================
+local loading = create("Frame", {
+    Name = "Loading",
+    Size = UDim2.fromScale(1, 1),
+    BackgroundColor3 = C.bg,
+    BorderSizePixel = 0,
+    ZIndex = 100,
+    Parent = screenGui,
+})
+
+local loadBox = create("Frame", {
+    Size = UDim2.fromOffset(360, 200),
+    Position = UDim2.fromScale(0.5, 0.5),
+    AnchorPoint = Vector2.new(0.5, 0.5),
+    BackgroundColor3 = C.panel,
+    BorderSizePixel = 0,
+    BackgroundTransparency = 1,
+    Parent = loading,
+})
+corner(loadBox, 16)
+local lbStroke = stroke(loadBox, C.stroke, 1)
+lbStroke.Transparency = 1
+
+local logoText = create("TextLabel", {
+    Size = UDim2.new(1, 0, 0, 50),
+    Position = UDim2.new(0, 0, 0, 25),
+    BackgroundTransparency = 1,
+    Text = "KIRITTO.HUB",
+    Font = Enum.Font.GothamBold,
+    TextSize = 32,
+    TextColor3 = C.text,
+    TextTransparency = 1,
+    Parent = loadBox,
+})
+gradient(logoText, C.accent, C.accent2, 15)
+
+local loadingBar = create("Frame", {
+    Size = UDim2.new(0.8, 0, 0, 6),
+    Position = UDim2.new(0.5, 0, 0, 110),
+    AnchorPoint = Vector2.new(0.5, 0),
+    BackgroundColor3 = C.panel2,
+    BorderSizePixel = 0,
+    Parent = loadBox,
+})
+corner(loadingBar, 4)
+
+local barFill = create("Frame", {
+    Size = UDim2.new(0, 0, 1, 0),
+    BackgroundColor3 = C.accent,
+    BorderSizePixel = 0,
+    Parent = loadingBar,
+})
+corner(barFill, 4)
+gradient(barFill, C.accent, C.accent2, 0)
+
+local statusTxt = create("TextLabel", {
+    Size = UDim2.new(1, 0, 0, 20),
+    Position = UDim2.new(0, 0, 0, 135),
+    BackgroundTransparency = 1,
+    Text = "Iniciando...",
+    Font = Enum.Font.Gotham,
+    TextSize = 13,
+    TextColor3 = C.sub,
+    TextTransparency = 1,
+    Parent = loadBox,
+})
+
+TweenService:Create(loadBox, TweenInfo.new(0.6, Enum.EasingStyle.Quart), {BackgroundTransparency = 0}):Play()
+TweenService:Create(lbStroke, TweenInfo.new(0.6), {Transparency = 0}):Play()
+TweenService:Create(logoText, TweenInfo.new(0.8, Enum.EasingStyle.Quart), {TextTransparency = 0}):Play()
+TweenService:Create(statusTxt, TweenInfo.new(0.8), {TextTransparency = 0}):Play()
+
+task.spawn(function()
+    local pasos = {
+        {"Cargando módulos...", 0.3},
+        {"Verificando entorno...", 0.6},
+        {"Preparando interfaz...", 0.85},
+        {"Listo ✔", 1},
+    }
+    for _, p in ipairs(pasos) do
+        statusTxt.Text = p[1]
+        TweenService:Create(barFill, TweenInfo.new(0.35, Enum.EasingStyle.Quart), {Size = UDim2.new(p[2], 0, 1, 0)}):Play()
+        task.wait(0.4)
+    end
+    task.wait(0.3)
+    TweenService:Create(loading, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(loadBox, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(logoText, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+    TweenService:Create(statusTxt, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+    TweenService:Create(lbStroke, TweenInfo.new(0.5), {Transparency = 1}):Play()
+    task.wait(0.55)
+    loading:Destroy()
+end)
+
+-- ================================================================
+--  2) NOTIFICACIONES + SONIDOS
+-- ================================================================
+local notifContainer = create("Frame", {
+    Name = "Notificaciones",
+    Size = UDim2.new(0, 280, 1, -40),
+    Position = UDim2.new(1, -300, 0, 20),
+    BackgroundTransparency = 1,
+    ZIndex = 180,
+    Parent = screenGui,
+})
+create("UIListLayout", {
+    Padding = UDim.new(0, 8),
+    SortOrder = Enum.SortOrder.LayoutOrder,
+    VerticalAlignment = Enum.VerticalAlignment.Top,
+    HorizontalAlignment = Enum.HorizontalAlignment.Right,
+    Parent = notifContainer,
+})
+
+local notifCounter = 0
+local Sonidos = {
+    click  = "rbxassetid://6895079853",
+    abrir  = "rbxassetid://4590657391",
+    exito  = "rbxassetid://4590662766",
+    error  = "rbxassetid://5152821844",
+    notify = "rbxassetid://6042053626",
+}
+
+local function playSFX(id, vol)
+    task.spawn(function()
+        local s = Instance.new("Sound")
+        s.SoundId = id
+        s.Volume = vol or 0.4
+        s.Parent = (gethui and gethui()) or game:GetService("SoundService")
+        s:Play()
+        s.Ended:Connect(function() s:Destroy() end)
+        task.delay(5, function() if s and s.Parent then s:Destroy() end end)
+    end)
+end
+
+function _G.KirittoNotify(titulo, mensaje, tipo)
+    tipo = tipo or "info"
+    local paleta = {
+        info    = C.accent,
+        success = C.success,
+        error   = C.error,
+        warn    = C.warn,
+    }
+    local color = paleta[tipo] or C.accent
+    notifCounter += 1
+
+    local toast = create("Frame", {
+        Size = UDim2.fromOffset(260, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundColor3 = C.panel,
+        BorderSizePixel = 0,
+        BackgroundTransparency = 1,
+        LayoutOrder = notifCounter,
+        Parent = notifContainer,
+    })
+    corner(toast, 10)
+    local tst = stroke(toast, color, 1.5)
+    tst.Transparency = 1
+
+    create("Frame", {
+        Size = UDim2.new(0, 4, 1, 0),
+        BackgroundColor3 = color,
+        BorderSizePixel = 0,
+        Parent = toast,
+    })
+
+    create("UIPadding", {
+        PaddingTop = UDim.new(0, 10),
+        PaddingBottom = UDim.new(0, 10),
+        PaddingLeft = UDim.new(0, 14),
+        PaddingRight = UDim.new(0, 10),
+        Parent = toast,
+    })
+
+    local inner = create("Frame", {
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
+        Parent = toast,
+    })
+
+    create("TextLabel", {
+        Size = UDim2.new(1, 0, 0, 16),
+        BackgroundTransparency = 1,
+        Text = titulo,
+        Font = Enum.Font.GothamBold,
+        TextSize = 13,
+        TextColor3 = color,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = inner,
+    })
+
+    create("TextLabel", {
+        Size = UDim2.new(1, 0, 0, 0),
+        Position = UDim2.new(0, 0, 0, 18),
+        BackgroundTransparency = 1,
+        Text = mensaje,
+        Font = Enum.Font.Gotham,
+        TextSize = 12,
+        TextColor3 = Color3.fromRGB(210, 210, 230),
+        TextWrapped = true,
+        AutomaticSize = Enum.AutomaticSize.Y,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Top,
+        Parent = inner,
+    })
+
+    toast.Position = UDim2.new(1, 40, 0, 0)
+    TweenService:Create(toast, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundTransparency = 0
+    }):Play()
+    TweenService:Create(tst, TweenInfo.new(0.4), {Transparency = 0}):Play()
+
+    playSFX(Sonidos.notify, 0.25)
+
+    task.delay(4, function()
+        TweenService:Create(toast, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {
+            Position = UDim2.new(1, 40, 0, 0),
+            BackgroundTransparency = 1
+        }):Play()
+        TweenService:Create(tst, TweenInfo.new(0.4), {Transparency = 1}):Play()
+        task.wait(0.45)
+        toast:Destroy()
+    end)
+end
+
+-- ================================================================
+--  3) PANTALLA DE KEY
+-- ================================================================
+local keyScreen = create("Frame", {
+    Name = "KeyScreen",
+    Size = UDim2.fromScale(1, 1),
+    BackgroundColor3 = C.bg,
+    BorderSizePixel = 0,
+    BackgroundTransparency = 1,
+    Visible = false,
+    ZIndex = 90,
+    Parent = screenGui,
+})
+
+local keyBox = create("Frame", {
+    Size = UDim2.fromOffset(400, 260),
+    Position = UDim2.fromScale(0.5, 0.5),
+    AnchorPoint = Vector2.new(0.5, 0.5),
+    BackgroundColor3 = C.panel,
+    BorderSizePixel = 0,
+    BackgroundTransparency = 1,
+    Parent = keyScreen,
+})
+corner(keyBox, 16)
+local kbStroke = stroke(keyBox, C.accent, 1.5)
+kbStroke.Transparency = 1
+gradient(keyBox, Color3.fromRGB(28, 28, 44), Color3.fromRGB(18, 18, 30), 90)
+
+create("TextLabel", {
+    Size = UDim2.new(1, 0, 0, 40),
+    Position = UDim2.new(0, 0, 0, 25),
+    BackgroundTransparency = 1,
+    Text = "🔐  KIRITTO.HUB",
+    Font = Enum.Font.GothamBold,
+    TextSize = 26,
+    TextColor3 = C.text,
+    Parent = keyBox,
+})
+gradient(keyBox:FindFirstChildWhichIsA("TextLabel"), C.accent, C.accent2, 20)
+
+create("TextLabel", {
+    Size = UDim2.new(1, 0, 0, 20),
+    Position = UDim2.new(0, 0, 0, 70),
+    BackgroundTransparency = 1,
+    Text = "Introduce tu key para continuar",
+    Font = Enum.Font.Gotham,
+    TextSize = 13,
+    TextColor3 = C.sub,
+    Parent = keyBox,
+})
+
+local keyInputBox = create("Frame", {
+    Size = UDim2.new(0.85, 0, 0, 44),
+    Position = UDim2.new(0.5, 0, 0, 105),
+    AnchorPoint = Vector2.new(0.5, 0),
+    BackgroundColor3 = C.panel2,
+    BorderSizePixel = 0,
+    Parent = keyBox,
+})
+corner(keyInputBox, 10)
+stroke(keyInputBox, C.stroke, 1)
+
+local keyInput = create("TextBox", {
+    Size = UDim2.new(1, -20, 1, 0),
+    Position = UDim2.new(0, 10, 0, 0),
+    BackgroundTransparency = 1,
+    Text = "",
+    PlaceholderText = "KEY-XXXX-XXXX-XXXX",
+    PlaceholderColor3 = Color3.fromRGB(100, 100, 130),
+    Font = Enum.Font.Gotham,
+    TextSize = 14,
+    TextColor3 = C.text,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ClearTextOnFocus = false,
+    Parent = keyInputBox,
+})
+
+local statusKey = create("TextLabel", {
+    Size = UDim2.new(1, 0, 0, 18),
+    Position = UDim2.new(0, 0, 0, 158),
+    BackgroundTransparency = 1,
+    Text = "",
+    Font = Enum.Font.GothamMedium,
+    TextSize = 12,
+    TextColor3 = C.error,
+    Parent = keyBox,
+})
+
+local verifyBtn = create("TextButton", {
+    Size = UDim2.new(0.85, 0, 0, 44),
+    Position = UDim2.new(0.5, 0, 0, 185),
+    AnchorPoint = Vector2.new(0.5, 0),
+    BackgroundColor3 = C.accent,
+    BorderSizePixel = 0,
+    Text = "VERIFICAR",
+    Font = Enum.Font.GothamBold,
+    TextSize = 15,
+    TextColor3 = C.text,
+    AutoButtonColor = false,
+    Parent = keyBox,
+})
+corner(verifyBtn, 10)
+gradient(verifyBtn, C.accent, C.accent2, 0)
+
+verifyBtn.MouseEnter:Connect(function()
+    TweenService:Create(verifyBtn, TweenInfo.new(0.2), {Size = UDim2.new(0.87, 0, 0, 46)}):Play()
+end)
+verifyBtn.MouseLeave:Connect(function()
+    TweenService:Create(verifyBtn, TweenInfo.new(0.2), {Size = UDim2.new(0.85, 0, 0, 44)}):Play()
+end)
+
+-- ================================================================
+--  4) PANTALLA DE AGRADECIMIENTO
+-- ================================================================
+local function mostrarAgradecimiento(onDone)
+    local overlay = create("Frame", {
+        Size = UDim2.fromScale(1, 1),
+        BackgroundColor3 = C.bg,
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = 200,
+        Parent = screenGui,
+    })
+
+    local grad = create("Frame", {
+        Size = UDim2.fromScale(1, 1),
+        BackgroundColor3 = C.accent,
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Parent = overlay,
+    })
+    gradient(grad, C.accent, C.accent2, 45)
+
+    local titulo = create("TextLabel", {
+        Size = UDim2.new(1, 0, 0, 70),
+        Position = UDim2.new(0.5, 0, 0.42, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundTransparency = 1,
+        Text = "GRACIAS POR UTILIZAR",
+        Font = Enum.Font.GothamBold,
+        TextSize = 30,
+        TextColor3 = C.text,
+        TextTransparency = 1,
+        ZIndex = 201,
+        Parent = overlay,
+    })
+
+    local marca = create("TextLabel", {
+        Size = UDim2.new(1, 0, 0, 80),
+        Position = UDim2.new(0.5, 0, 0.52, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundTransparency = 1,
+        Text = "KIRITTO.HUB",
+        Font = Enum.Font.GothamBlack,
+        TextSize = 56,
+        TextColor3 = C.text,
+        TextTransparency = 1,
+        ZIndex = 201,
+        Parent = overlay,
+    })
+    gradient(marca, C.accent, C.accent2, 20)
+
+    local sub = create("TextLabel", {
+        Size = UDim2.new(1, 0, 0, 20),
+        Position = UDim2.new(0.5, 0, 0.62, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundTransparency = 1,
+        Text = "TikTok: @kiritto.hub",
+        Font = Enum.Font.Gotham,
+        TextSize = 15,
+        TextColor3 = Color3.fromRGB(220, 220, 235),
+        TextTransparency = 1,
+        ZIndex = 201,
+        Parent = overlay,
+    })
+
+    TweenService:Create(overlay, TweenInfo.new(0.4), {BackgroundTransparency = 0}):Play()
+    TweenService:Create(grad, TweenInfo.new(0.6), {BackgroundTransparency = 0.85}):Play()
+    TweenService:Create(titulo, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
+    task.wait(0.15)
+    TweenService:Create(marca, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+    task.wait(0.3)
+    TweenService:Create(sub, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
+
+    task.wait(1.6)
+
+    TweenService:Create(overlay, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(titulo, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
+    TweenService:Create(marca, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
+    TweenService:Create(sub, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
+    task.wait(0.55)
+    overlay:Destroy()
+    if onDone then onDone() end
+end
+
+-- ================================================================
+--  5) REGIONES
+-- ================================================================
+local REGIONES = {
+    {nombre = "🌎  Todas",  key = "any"},
+    {nombre = "🇧🇷  Brasil", key = "br"},
+    {nombre = "🇺🇸  USA",    key = "us"},
+    {nombre = "🇪🇺  Europa", key = "eu"},
+    {nombre = "🇦🇸  Asia",   key = "as"},
+}
+
+-- ================================================================
+--  6) UI PRINCIPAL
+-- ================================================================
+local mainFrameRef = nil
+
+local function crearUI()
+    if mainFrameRef and mainFrameRef.Parent then mainFrameRef:Destroy() end
+
+    local mainFrame = create("Frame", {
+        Name = "Main",
+        Size = UDim2.fromOffset(560, 360),
+        Position = UDim2.fromScale(0.5, 0.5),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundColor3 = C.panel,
+        BorderSizePixel = 0,
+        Parent = screenGui,
+    })
+    corner(mainFrame, 14)
+    stroke(mainFrame, C.accent, 1.5)
+    gradient(mainFrame, Color3.fromRGB(26, 26, 42), Color3.fromRGB(16, 16, 26), 90)
+    mainFrameRef = mainFrame
+
+    mainFrame.Size = UDim2.fromOffset(0, 0)
+    TweenService:Create(mainFrame, TweenInfo.new(0.55, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Size = UDim2.fromOffset(560, 360)
+    }):Play()
+
+    -- ── Topbar ───────────────────────────────────────────────
+    local topbar = create("Frame", {
+        Size = UDim2.new(1, 0, 0, 40),
+        BackgroundTransparency = 1,
+        Parent = mainFrame,
+    })
+
+    create("TextLabel", {
+        Size = UDim2.new(1, -80, 1, 0),
+        Position = UDim2.new(0, 16, 0, 0),
+        BackgroundTransparency = 1,
+        Text = "KIRITTO.HUB",
+        Font = Enum.Font.GothamBold,
+        TextSize = 18,
+        TextColor3 = C.text,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = topbar,
+    })
+
+    local closeBtn = create("TextButton", {
+        Size = UDim2.fromOffset(28, 28),
+        Position = UDim2.new(1, -36, 0, 6),
+        BackgroundColor3 = C.error,
+        BorderSizePixel = 0,
+        Text = "✕",
+        Font = Enum.Font.GothamBold,
+        TextSize = 14,
+        TextColor3 = C.text,
+        AutoButtonColor = false,
+        Parent = topbar,
+    })
+    corner(closeBtn, 14)
+    closeBtn.MouseButton1Click:Connect(function()
+        TweenService:Create(mainFrame, TweenInfo.new(0.35, Enum.EasingStyle.Quart), {
+            Size = UDim2.fromOffset(0, 0)
+        }):Play()
+        task.wait(0.4)
+        mainFrame:Destroy()
+        mainFrameRef = nil
+    end)
+
+    -- Drag
+    do
+                local dragging, dragStart, startPos
+        topbar.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragStart = input.Position
+                startPos = mainFrame.Position
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then dragging = false end
+                end)
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                local delta = input.Position - dragStart
+                mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            end
+        end)
+    end
+
+    -- ── Sidebar ──────────────────────────────────────────────
+    local sidebar = create("Frame", {
+        Size = UDim2.new(0, 140, 1, -50),
+        Position = UDim2.new(0, 10, 0, 44),
+        BackgroundColor3 = C.panel2,
+        BorderSizePixel = 0,
+        Parent = mainFrame,
+    })
+    corner(sidebar, 10)
+    stroke(sidebar, C.stroke, 1)
+
+    create("UIListLayout", {
+        Padding = UDim.new(0, 6),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+        Parent = sidebar,
+    })
+    create("UIPadding", {PaddingTop = UDim.new(0, 10), Parent = sidebar})
+
+    -- ── Contenido ────────────────────────────────────────────
+    local content = create("Frame", {
+        Size = UDim2.new(1, -170, 1, -50),
+        Position = UDim2.new(0, 160, 0, 44),
+        BackgroundColor3 = C.panel2,
+        BorderSizePixel = 0,
+        Parent = mainFrame,
+    })
+    corner(content, 10)
+    stroke(content, C.stroke, 1)
+
+    -- ── Tabs ─────────────────────────────────────────────────
+    local tabs = {}
+    local botones = {}
+
+    local function mostrarTab(nombre)
+        for n, frame in pairs(tabs) do
+            frame.Visible = (n == nombre)
+        end
+        for n, btn in pairs(botones) do
+            TweenService:Create(btn, TweenInfo.new(0.2), {
+                BackgroundColor3 = (n == nombre) and C.accent or C.panel,
+            }):Play()
+        end
+    end
+
+    local function crearBotonTab(nombre, texto, orden)
+        local btn = create("TextButton", {
+            Size = UDim2.new(1, -16, 0, 34),
+            BackgroundColor3 = C.panel,
+            BorderSizePixel = 0,
+            Text = texto,
+            Font = Enum.Font.GothamMedium,
+            TextSize = 13,
+            TextColor3 = C.text,
+            AutoButtonColor = false,
+            LayoutOrder = orden,
+            Parent = sidebar,
+        })
+        corner(btn, 8)
+        btn.MouseButton1Click:Connect(function()
+            mostrarTab(nombre)
+            playSFX(Sonidos.click, 0.2)
+        end)
+        botones[nombre] = btn
+        return btn
+    end
+
+    -- ══════════════ TAB INICIO ══════════════
+    local tabInicio = create("Frame", {
+        Size = UDim2.fromScale(1, 1),
+        BackgroundTransparency = 1,
+        Parent = content,
+    })
+    tabs["Inicio"] = tabInicio
+
+    create("TextLabel", {
+        Size = UDim2.new(1, -20, 0, 30),
+        Position = UDim2.new(0, 10, 0, 10),
+        BackgroundTransparency = 1,
+        Text = "🏠  Inicio",
+        Font = Enum.Font.GothamBold,
+        TextSize = 18,
+        TextColor3 = C.text,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = tabInicio,
+    })
+
+    local cardTikTok = create("Frame", {
+        Size = UDim2.new(1, -20, 0, 42),
+        Position = UDim2.new(0, 10, 0, 48),
+        BackgroundColor3 = C.panel,
+        BorderSizePixel = 0,
+        Parent = tabInicio,
+    })
+    corner(cardTikTok, 8)
+    stroke(cardTikTok, C.accent, 1)
+
+    create("TextLabel", {
+        Size = UDim2.fromScale(1, 1),
+        BackgroundTransparency = 1,
+        Text = "🎵  tiktok :  kiritto.hub",
+        Font = Enum.Font.GothamBold,
+        TextSize = 15,
+        TextColor3 = C.text,
+        Parent = cardTikTok,
+    })
+
+    local cardMensaje = create("Frame", {
+        Size = UDim2.new(1, -20, 1, -110),
+        Position = UDim2.new(0, 10, 0, 100),
+        BackgroundColor3 = C.panel,
+        BorderSizePixel = 0,
+        Parent = tabInicio,
+    })
+    corner(cardMensaje, 8)
+    stroke(cardMensaje, C.stroke, 1)
+
+    local msgScroll = create("ScrollingFrame", {
+        Size = UDim2.fromScale(1, 1),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 4,
+        ScrollBarImageColor3 = C.accent,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        Parent = cardMensaje,
+    })
+    create("UIPadding", {
+        PaddingTop = UDim.new(0, 10),
+        PaddingBottom = UDim.new(0, 10),
+        PaddingLeft = UDim.new(0, 12),
+        PaddingRight = UDim.new(0, 12),
+        Parent = msgScroll,
+    })
+
+    create("TextLabel", {
+        Size = UDim2.new(1, -8, 0, 0),
+        BackgroundTransparency = 1,
+        Text = "ESTOY APRENDIENDO A CREAR SCRIPT, NO SOY EL MEJOR CREADOR NI HAGO SCRIPT QUE LLAMEN LA ATENCIÓN, PERO JURO QUE ME VOY A CONVERTIR EN EL MEJOR CREADOR DE SCRIPT PARA DELTA.",
+        Font = Enum.Font.GothamMedium,
+        TextSize = 14,
+        TextWrapped = true,
+        TextColor3 = Color3.fromRGB(220, 220, 240),
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Top,
+        AutomaticSize = Enum.AutomaticSize.Y,
+        Parent = msgScroll,
+    })
+
+    -- ══════════════ TAB SERVER HOP ══════════════
+    local tabHop = create("Frame", {
+        Size = UDim2.fromScale(1, 1),
+        BackgroundTransparency = 1,
+        Visible = false,
+        Parent = content,
+    })
+    tabs["Server Hop"] = tabHop
+
+    create("TextLabel", {
+        Size = UDim2.new(1, -20, 0, 30),
+        Position = UDim2.new(0, 10, 0, 10),
+        BackgroundTransparency = 1,
+        Text = "🌐  Server Hop",
+        Font = Enum.Font.GothamBold,
+        TextSize = 18,
+        TextColor3 = C.text,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = tabHop,
+    })
+
+    create("TextLabel", {
+        Size = UDim2.new(1, -20, 0, 20),
+        Position = UDim2.new(0, 10, 0, 40),
+        BackgroundTransparency = 1,
+        Text = "Busca servidores con 1 jugador y teletransporta automáticamente.",
+        Font = Enum.Font.Gotham,
+        TextSize = 11,
+        TextColor3 = C.sub,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = tabHop,
+    })
+
+    create("TextLabel", {
+        Size = UDim2.new(0, 100, 0, 20),
+        Position = UDim2.new(0, 10, 0, 68),
+        BackgroundTransparency = 1,
+        Text = "Región:",
+        Font = Enum.Font.GothamMedium,
+        TextSize = 12,
+        TextColor3 = C.text,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = tabHop,
+    })
+
+    local regionBtn = create("TextButton", {
+        Size = UDim2.new(1, -20, 0, 34),
+        Position = UDim2.new(0, 10, 0, 90),
+        BackgroundColor3 = C.panel,
+        BorderSizePixel = 0,
+        Text = REGIONES[1].nombre,
+        Font = Enum.Font.GothamMedium,
+        TextSize = 13,
+        TextColor3 = C.text,
+        AutoButtonColor = false,
+        Parent = tabHop,
+    })
+    corner(regionBtn, 8)
+    stroke(regionBtn, C.stroke, 1)
+
+    local regionActual = 1
+    local dropdownOpen = false
+    local dropdownFrame
+
+    local function cerrarDropdown()
+        if dropdownFrame then dropdownFrame:Destroy() dropdownFrame = nil end
+        dropdownOpen = false
+    end
+
+    local function abrirDropdown()
+        if dropdownOpen then cerrarDropdown() return end
+        dropdownOpen = true
+
+        dropdownFrame = create("Frame", {
+            Size = UDim2.new(1, -20, 0, #REGIONES * 30),
+            Position = UDim2.new(0, 10, 0, 126),
+            BackgroundColor3 = C.panel,
+            BorderSizePixel = 0,
+            ZIndex = 50,
+            Parent = tabHop,
+        })
+        corner(dropdownFrame, 8)
+        stroke(dropdownFrame, C.accent, 1)
+
+        for i, reg in ipairs(REGIONES) do
+            local opt = create("TextButton", {
+                Size = UDim2.new(1, 0, 0, 30),
+                Position = UDim2.new(0, 0, 0, (i-1)*30),
+                BackgroundColor3 = C.panel,
+                BackgroundTransparency = 0.3,
+                BorderSizePixel = 0,
+                Text = reg.nombre,
+                Font = Enum.Font.Gotham,
+                TextSize = 12,
+                TextColor3 = C.text,
+                AutoButtonColor = false,
+                ZIndex = 51,
+                Parent = dropdownFrame,
+            })
+            opt.MouseEnter:Connect(function()
+                TweenService:Create(opt, TweenInfo.new(0.15), {BackgroundColor3 = C.accent, BackgroundTransparency = 0}):Play()
+            end)
+            opt.MouseLeave:Connect(function()
+                TweenService:Create(opt, TweenInfo.new(0.15), {BackgroundColor3 = C.panel, BackgroundTransparency = 0.3}):Play()
+            end)
+            opt.MouseButton1Click:Connect(function()
+                regionActual = i
+                regionBtn.Text = reg.nombre
+                cerrarDropdown()
+                playSFX(Sonidos.click, 0.2)
+                _G.KirittoNotify("Región", "Cambiada a " .. reg.nombre, "info")
+                escribirArchivo(CONFIG_FILE, tostring(i))
+            end)
+        end
+    end
+
+    regionBtn.MouseButton1Click:Connect(abrirDropdown)
+
+    do
+        local cfg = leerArchivo(CONFIG_FILE)
+        if cfg then
+            local n = tonumber(cfg)
+            if n and REGIONES[n] then
+                regionActual = n
+                regionBtn.Text = REGIONES[n].nombre
+            end
+        end
+    end
+
+    local hopBtn = create("TextButton", {
+        Size = UDim2.new(1, -20, 0, 46),
+        Position = UDim2.new(0, 10, 0, 132),
+        BackgroundColor3 = C.accent,
+        BorderSizePixel = 0,
+        Text = "🔍  BUSCAR SERVIDOR CON 1 JUGADOR",
+        Font = Enum.Font.GothamBold,
+        TextSize = 13,
+        TextColor3 = C.text,
+        AutoButtonColor = false,
+        Parent = tabHop,
+    })
+    corner(hopBtn, 10)
+    gradient(hopBtn, C.accent, C.accent2, 0)
+
+    local hopStatus = create("TextLabel", {
+        Size = UDim2.new(1, -20, 1, -195),
+        Position = UDim2.new(0, 10, 0, 188),
+        BackgroundTransparency = 1,
+        Text = "Estado: Esperando acción...",
+        Font = Enum.Font.Gotham,
+        TextSize = 11,
+        TextColor3 = C.sub,
+        TextWrapped = true,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Top,
+        Parent = tabHop,
+    })
+
+    -- ── LÓGICA SERVER HOP ────────────────────────────────────
+    local buscando = false
+    local cancelar = false
+
+    local function obtenerServidores(placeId)
+        local url = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100"
+        local ok, res = pcall(function()
+            return HttpService:JSONDecode(game:HttpGet(url))
+        end)
+        if not ok or not res or not res.data then return nil end
+        return res.data
+    end
+
+    local function ordenarPorRegion(servidores, regionKey)
+        if regionKey == "any" then return servidores end
+        local copia = {}
+        for _, s in ipairs(servidores) do table.insert(copia, s) end
+        table.sort(copia, function(a, b)
+            return (a.ping or 9999) < (b.ping or 9999)
+        end)
+        return copia
+    end
+
+    local function teletransportar(jobId)
+        local placeId = game.PlaceId
+        local player = LocalPlayer
+
+        local ok1 = pcall(function()
+            if TeleportService.TeleportAsync then
+                TeleportService:TeleportAsync(placeId, {player}, {
+                    ServerInstanceId = jobId
+                })
+            else
+                error("no async")
+            end
+        end)
+        if ok1 then return true end
+
+        local ok2 = pcall(function()
+            TeleportService:TeleportToPlaceInstance(placeId, jobId, player)
+        end)
+        if ok2 then return true end
+
+        local ok3 = pcall(function()
+            TeleportService:TeleportToPlaceInstance(placeId, jobId)
+        end)
+        if ok3 then return true end
+
+        return false
+    end
+
+    hopBtn.MouseButton1Click:Connect(function()
+        if buscando then
+            cancelar = true
+            return
+        end
+
+        buscando = true
+        cancelar = false
+        hopBtn.Text = "⏹  CANCELAR BÚSQUEDA"
+        hopBtn.BackgroundColor3 = C.error
+        hopStatus.TextColor3 = C.sub
+        hopStatus.Text = "Estado: Buscando servidores..."
+
+        local regionKey = REGIONES[regionActual].key
+        local regionNombre = REGIONES[regionActual].nombre
+
+        _G.KirittoNotify("Server Hop", "Buscando · " .. regionNombre, "info")
+        playSFX(Sonidos.click, 0.3)
+
+        task.spawn(function()
+            local intentos = 0
+            local espera = 2
+            local maxJugadores = 1
+            local SMART_CADA = 5
+            local SMART_MAX = 3
+
+            while not cancelar do
+                intentos += 1
+
+                if intentos > 1 and intentos % SMART_CADA == 0 and maxJugadores < SMART_MAX then
+                    maxJugadores += 1
+                    _G.KirittoNotify("Smart Hop", "Ampliando búsqueda a " .. maxJugadores .. " jugadores", "warn")
+                end
+
+                hopStatus.Text = string.format(
+                    "🔎 Intento #%d · Región: %s · Buscando ≤%d jugador(es)",
+                    intentos, regionNombre, maxJugadores
+                )
+
+                local servidores = obtenerServidores(game.PlaceId)
+                if servidores then
+                    local ordenados = ordenarPorRegion(servidores, regionKey)
+                    local actual = game.JobId
+                    local elegido = nil
+
+                    for _, srv in ipairs(ordenados) do
+                        if srv.id ~= actual
+                           and srv.playing >= 1
+                           and srv.playing <= maxJugadores
+                           and srv.playing < srv.maxPlayers then
+                            elegido = srv
+                            break
+                        end
+                    end
+
+                    if elegido then
+                        hopStatus.TextColor3 = C.success
+                        hopStatus.Text = string.format(
+                            "✅ Encontrado (%d/%d · ping %dms). Teletransportando...",
+                            elegido.playing, elegido.maxPlayers, elegido.ping or 0
+                        )
+                        hopBtn.Text = "🚀  TELETRANSPORTANDO..."
+                        _G.KirittoNotify("¡Encontrado!", elegido.playing .. " jugador(es) · " .. regionNombre, "success")
+                        playSFX(Sonidos.exito, 0.4)
+                        task.wait(0.7)
+
+                        local exito = teletransportar(elegido.id)
+
+                        if not exito then
+                            hopStatus.TextColor3 = C.error
+                            hopStatus.Text = "❌ El teletransporte falló. Reintentando con otro servidor..."
+                            _G.KirittoNotify("Error de teleport", "Reintentando con otro servidor...", "error")
+                            playSFX(Sonidos.error, 0.4)
+                            task.wait(1)
+                        else
+                            buscando = false
+                            return
+                        end
+                    else
+                        hopStatus.TextColor3 = C.warn
+                        hopStatus.Text = string.format(
+                            "🔄 Sin servidores con ≤%d jugador(es) (intento #%d). Reintentando en %ds...",
+                            maxJugadores, intentos, espera
+                        )
+                    end
+                else
+                    hopStatus.TextColor3 = C.error
+                    hopStatus.Text = string.format(
+                        "❌ Error al consultar la API (intento #%d). Reintentando en %ds...",
+                        intentos, espera
+                    )
+                end
+
+                local t = 0
+                while t < espera and not cancelar do
+                    task.wait(0.2)
+                    t += 0.2
+                end
+                espera = math.min(espera + 0.5, 6)
+            end
+
+            hopStatus.TextColor3 = C.sub
+            hopStatus.Text = "⏹ Búsqueda cancelada por el usuario."
+            hopBtn.Text = "🔍  BUSCAR SERVIDOR CON 1 JUGADOR"
+            hopBtn.BackgroundColor3 = C.accent
+            buscando = false
+            _G.KirittoNotify("Cancelado", "Búsqueda detenida.", "warn")
+        end)
+    end)
+
+    crearBotonTab("Inicio", "🏠  Inicio", 1)
+    crearBotonTab("Server Hop", "🌐  Server Hop", 2)
+    mostrarTab("Inicio")
+end
+
+-- ================================================================
+--  7) BOTÓN FLOTANTE
+-- ================================================================
+local toggleBtnRef = nil
+
+local function crearToggle()
+    if toggleBtnRef and toggleBtnRef.Parent then return end
+
+    local toggleBtn = create("TextButton", {
+        Name = "ToggleBtn",
+        Size = UDim2.fromOffset(56, 56),
+        Position = UDim2.new(0, 20, 0.5, -28),
+        BackgroundColor3 = C.accent,
+        BorderSizePixel = 0,
+        Text = "K",
+        Font = Enum.Font.GothamBlack,
+        TextSize = 26,
+        TextColor3 = C.text,
+        AutoButtonColor = false,
+        ZIndex = 150,
+        Parent = screenGui,
+    })
+    corner(toggleBtn, 28)
+    gradient(toggleBtn, C.accent, C.accent2, 45)
+    local tglStroke = stroke(toggleBtn, Color3.fromRGB(255, 255, 255), 1.5)
+    tglStroke.Transparency = 0.5
+    toggleBtnRef = toggleBtn
+
+    task.spawn(function()
+        while toggleBtn.Parent do
+            TweenService:Create(tglStroke, TweenInfo.new(1.2), {Transparency = 0.85}):Play()
+            TweenService:Create(toggleBtn, TweenInfo.new(1.2), {Size = UDim2.fromOffset(62, 62)}):Play()
+            task.wait(1.2)
+            TweenService:Create(tglStroke, TweenInfo.new(1.2), {Transparency = 0.5}):Play()
+            TweenService:Create(toggleBtn, TweenInfo.new(1.2), {Size = UDim2.fromOffset(56, 56)}):Play()
+            task.wait(1.2)
+        end
+    end)
+
+    local dragging, dragStart, startPos, moved
+    toggleBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            moved = false
+            dragStart = input.Position
+            startPos = toggleBtn.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            if math.abs(delta.X) > 3 or math.abs(delta.Y) > 3 then moved = true end
+            toggleBtn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+                                            startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    toggleBtn.MouseButton1Click:Connect(function()
+        if moved then return end
+        playSFX(Sonidos.click, 0.25)
+        if mainFrameRef and mainFrameRef.Parent then
+            TweenService:Create(mainFrameRef, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+                Size = UDim2.fromOffset(0, 0)
+            }):Play()
+                        task.wait(0.32)
+            mainFrameRef:Destroy()
+            mainFrameRef = nil
+        else
+            crearUI()
+        end
+    end)
+end
+
+-- ================================================================
+--  8) KEYBIND RightShift
+-- ================================================================
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.RightShift then
+        playSFX(Sonidos.click, 0.25)
+        if mainFrameRef and mainFrameRef.Parent then
+            TweenService:Create(mainFrameRef, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+                Size = UDim2.fromOffset(0, 0)
+            }):Play()
+            task.wait(0.32)
+            mainFrameRef:Destroy()
+            mainFrameRef = nil
+            _G.KirittoNotify("KIRITTO.HUB", "Menú cerrado · RightShift para abrir", "info")
+        else
+            crearUI()
+            _G.KirittoNotify("KIRITTO.HUB", "Menú abierto · RightShift para cerrar", "success")
+        end
+    end
+end)
+
+-- ================================================================
+--  9) VERIFICACIÓN DE KEY
+-- ================================================================
+local function iniciarHub()
+    mostrarAgradecimiento(function()
+        crearUI()
+        crearToggle()
+    end)
+end
+
+local function verificarKey()
+    local ingresada = keyInput.Text
+    if ingresada == KEY_VALIDA then
+        guardarKey(ingresada)
+        statusKey.TextColor3 = C.success
+        statusKey.Text = "✔ Key correcta. Guardando..."
+        playSFX(Sonidos.exito, 0.4)
+        _G.KirittoNotify("Key aceptada", "Guardada para futuras sesiones 🌸", "success")
+        task.wait(0.7)
+
+        TweenService:Create(keyScreen, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+        TweenService:Create(keyBox, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+        TweenService:Create(kbStroke, TweenInfo.new(0.4), {Transparency = 1}):Play()
+        task.wait(0.45)
+        keyScreen:Destroy()
+
+        iniciarHub()
+    else
+        statusKey.TextColor3 = C.error
+        statusKey.Text = "✖ Key incorrecta. Vuelve a intentarlo."
+        playSFX(Sonidos.error, 0.4)
+        _G.KirittoNotify("Key incorrecta", "Verifica tu key e intenta de nuevo.", "error")
+        local basePos = keyInputBox.Position
+        for i = 1, 4 do
+            local dx = (i % 2 == 0) and 8 or -8
+            TweenService:Create(keyInputBox, TweenInfo.new(0.05), {Position = UDim2.new(0.5, dx, 0, 105)}):Play()
+            task.wait(0.05)
+        end
+        TweenService:Create(keyInputBox, TweenInfo.new(0.1), {Position = basePos}):Play()
+    end
+end
+
+verifyBtn.MouseButton1Click:Connect(verificarKey)
+keyInput.FocusLost:Connect(function(enter) if enter then verificarKey() end end)
+
+-- ================================================================
+--  10) FLUJO INICIAL
+-- ================================================================
+task.spawn(function()
+    task.wait(1.8)
+
+    local keyGuardada = leerKeyGuardada()
+
+    if keyGuardada == KEY_VALIDA then
+        if keyScreen then keyScreen:Destroy() end
+        task.wait(0.1)
+        _G.KirittoNotify("KIRITTO.HUB", "Key guardada detectada ✔", "success")
+        task.wait(0.3)
+        iniciarHub()
+    else
+        if keyGuardada then borrarKeyGuardada() end
+        keyScreen.Visible = true
+        TweenService:Create(keyScreen, TweenInfo.new(0.5), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(keyBox, TweenInfo.new(0.6, Enum.EasingStyle.Quart), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(kbStroke, TweenInfo.new(0.6), {Transparency = 0}):Play()
+    end
+end)    else
+        if keyGuardada then borrarKeyGuardada() end
+        keyScreen.Visible = true
+        TweenService:Create(keyScreen, TweenInfo.new(0.5), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(keyBox, TweenInfo.new(0.6, Enum.EasingStyle.Quart), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(kbStroke, TweenInfo.new(0.6), {Transparency = 0}):Play()
+    end        -- 👈 cierra el if/else
+end)           -- 👈 cierra el task.spawn(function()  ← ESTA es tu línea 1262
