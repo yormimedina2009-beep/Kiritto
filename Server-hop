@@ -37,7 +37,7 @@ local C = {
     stroke  = Color3.fromRGB(58, 58, 88),
 }
 
--- ─── Helper para crear instancias ─────────────────────────────
+-- ─── Helpers ──────────────────────────────────────────────────
 local function create(class, props, children)
     local inst = Instance.new(class)
     for k, v in pairs(props or {}) do
@@ -50,13 +50,28 @@ local function create(class, props, children)
     return inst
 end
 
-local function corner(parent, r)  return create("UICorner", {CornerRadius = UDim.new(0, r or 8), Parent = parent}) end
-local function stroke(parent, col, th) return create("UIStroke", {Color = col or C.stroke, Thickness = th or 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = parent}) end
-local function gradient(parent, c1, c2, rot)
-    return create("UIGradient", {Color = ColorSequence.new(c1, c2), Rotation = rot or 0, Parent = parent})
+local function corner(parent, r)
+    return create("UICorner", {CornerRadius = UDim.new(0, r or 8), Parent = parent})
 end
 
--- ─── Guardado / Lectura de archivos ───────────────────────────
+local function stroke(parent, col, th)
+    return create("UIStroke", {
+        Color = col or C.stroke,
+        Thickness = th or 1,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+        Parent = parent
+    })
+end
+
+local function gradient(parent, c1, c2, rot)
+    return create("UIGradient", {
+        Color = ColorSequence.new(c1, c2),
+        Rotation = rot or 0,
+        Parent = parent
+    })
+end
+
+-- ─── Archivos ─────────────────────────────────────────────────
 local function leerArchivo(nombre)
     if not (readfile and isfile) then return nil end
     local ok, contenido = pcall(function()
@@ -71,7 +86,9 @@ local function escribirArchivo(nombre, contenido)
 end
 
 local function borrarArchivo(nombre)
-    if delfile and isfile then pcall(function() if isfile(nombre) then delfile(nombre) end end) end
+    if delfile and isfile then
+        pcall(function() if isfile(nombre) then delfile(nombre) end end)
+    end
 end
 
 local function leerKeyGuardada() return leerArchivo(KEY_FILE) end
@@ -81,10 +98,12 @@ local function borrarKeyGuardada() borrarArchivo(KEY_FILE) end
 -- ─── Limpiar GUI previa ───────────────────────────────────────
 pcall(function()
     if CoreGui:FindFirstChild("KirittoHub") then CoreGui.KirittoHub:Destroy() end
-    if LocalPlayer.PlayerGui:FindFirstChild("KirittoHub") then LocalPlayer.PlayerGui.KirittoHub:Destroy() end
+    if LocalPlayer.PlayerGui:FindFirstChild("KirittoHub") then
+        LocalPlayer.PlayerGui.KirittoHub:Destroy()
+    end
 end)
 
--- ─── Parent GUI (compatible Delta) ────────────────────────────
+-- ─── Parent GUI ───────────────────────────────────────────────
 local parentGui
 pcall(function() parentGui = (gethui and gethui()) or CoreGui end)
 if not parentGui then parentGui = LocalPlayer:WaitForChild("PlayerGui") end
@@ -180,7 +199,9 @@ task.spawn(function()
     }
     for _, p in ipairs(pasos) do
         statusTxt.Text = p[1]
-        TweenService:Create(barFill, TweenInfo.new(0.35, Enum.EasingStyle.Quart), {Size = UDim2.new(p[2], 0, 1, 0)}):Play()
+        TweenService:Create(barFill, TweenInfo.new(0.35, Enum.EasingStyle.Quart), {
+            Size = UDim2.new(p[2], 0, 1, 0)
+        }):Play()
         task.wait(0.4)
     end
     task.wait(0.3)
@@ -353,7 +374,7 @@ local kbStroke = stroke(keyBox, C.accent, 1.5)
 kbStroke.Transparency = 1
 gradient(keyBox, Color3.fromRGB(28, 28, 44), Color3.fromRGB(18, 18, 30), 90)
 
-create("TextLabel", {
+local keyTitle = create("TextLabel", {
     Size = UDim2.new(1, 0, 0, 40),
     Position = UDim2.new(0, 0, 0, 25),
     BackgroundTransparency = 1,
@@ -363,7 +384,7 @@ create("TextLabel", {
     TextColor3 = C.text,
     Parent = keyBox,
 })
-gradient(keyBox:FindFirstChildWhichIsA("TextLabel"), C.accent, C.accent2, 20)
+gradient(keyTitle, C.accent, C.accent2, 20)
 
 create("TextLabel", {
     Size = UDim2.new(1, 0, 0, 20),
@@ -505,7 +526,9 @@ local function mostrarAgradecimiento(onDone)
     TweenService:Create(grad, TweenInfo.new(0.6), {BackgroundTransparency = 0.85}):Play()
     TweenService:Create(titulo, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
     task.wait(0.15)
-    TweenService:Create(marca, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+    TweenService:Create(marca, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        TextTransparency = 0
+    }):Play()
     task.wait(0.3)
     TweenService:Create(sub, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
 
@@ -558,7 +581,7 @@ local function crearUI()
         Size = UDim2.fromOffset(560, 360)
     }):Play()
 
-    -- ── Topbar ───────────────────────────────────────────────
+    -- Topbar
     local topbar = create("Frame", {
         Size = UDim2.new(1, 0, 0, 40),
         BackgroundTransparency = 1,
@@ -599,9 +622,9 @@ local function crearUI()
         mainFrameRef = nil
     end)
 
-    -- Drag
+    -- Drag del topbar
     do
-                local dragging, dragStart, startPos
+        local dragging, dragStart, startPos
         topbar.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 dragging = true
@@ -615,12 +638,15 @@ local function crearUI()
         UserInputService.InputChanged:Connect(function(input)
             if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
                 local delta = input.Position - dragStart
-                mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+                mainFrame.Position = UDim2.new(
+                    startPos.X.Scale, startPos.X.Offset + delta.X,
+                    startPos.Y.Scale, startPos.Y.Offset + delta.Y
+                )
             end
         end)
     end
 
-    -- ── Sidebar ──────────────────────────────────────────────
+    -- Sidebar
     local sidebar = create("Frame", {
         Size = UDim2.new(0, 140, 1, -50),
         Position = UDim2.new(0, 10, 0, 44),
@@ -639,7 +665,7 @@ local function crearUI()
     })
     create("UIPadding", {PaddingTop = UDim.new(0, 10), Parent = sidebar})
 
-    -- ── Contenido ────────────────────────────────────────────
+    -- Contenido
     local content = create("Frame", {
         Size = UDim2.new(1, -170, 1, -50),
         Position = UDim2.new(0, 160, 0, 44),
@@ -650,7 +676,7 @@ local function crearUI()
     corner(content, 10)
     stroke(content, C.stroke, 1)
 
-    -- ── Tabs ─────────────────────────────────────────────────
+    -- Sistema de tabs
     local tabs = {}
     local botones = {}
 
@@ -686,218 +712,221 @@ local function crearUI()
         botones[nombre] = btn
         return btn
     end
+-- ══════════════ TAB INICIO ══════════════
+local tabInicio = create("Frame", {
+    Size = UDim2.fromScale(1, 1),
+    BackgroundTransparency = 1,
+    Parent = content,
+})
+tabs["Inicio"] = tabInicio
 
-    -- ══════════════ TAB INICIO ══════════════
-    local tabInicio = create("Frame", {
-        Size = UDim2.fromScale(1, 1),
-        BackgroundTransparency = 1,
-        Parent = content,
-    })
-    tabs["Inicio"] = tabInicio
+create("TextLabel", {
+    Size = UDim2.new(1, -20, 0, 30),
+    Position = UDim2.new(0, 10, 0, 10),
+    BackgroundTransparency = 1,
+    Text = "🏠  Inicio",
+    Font = Enum.Font.GothamBold,
+    TextSize = 18,
+    TextColor3 = C.text,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    Parent = tabInicio,
+})
 
-    create("TextLabel", {
-        Size = UDim2.new(1, -20, 0, 30),
-        Position = UDim2.new(0, 10, 0, 10),
-        BackgroundTransparency = 1,
-        Text = "🏠  Inicio",
-        Font = Enum.Font.GothamBold,
-        TextSize = 18,
-        TextColor3 = C.text,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Parent = tabInicio,
-    })
+local cardTikTok = create("Frame", {
+    Size = UDim2.new(1, -20, 0, 42),
+    Position = UDim2.new(0, 10, 0, 48),
+    BackgroundColor3 = C.panel,
+    BorderSizePixel = 0,
+    Parent = tabInicio,
+})
+corner(cardTikTok, 8)
+stroke(cardTikTok, C.accent, 1)
 
-    local cardTikTok = create("Frame", {
-        Size = UDim2.new(1, -20, 0, 42),
-        Position = UDim2.new(0, 10, 0, 48),
+create("TextLabel", {
+    Size = UDim2.fromScale(1, 1),
+    BackgroundTransparency = 1,
+    Text = "🎵  tiktok :  kiritto.hub",
+    Font = Enum.Font.GothamBold,
+    TextSize = 15,
+    TextColor3 = C.text,
+    Parent = cardTikTok,
+})
+
+local cardMensaje = create("Frame", {
+    Size = UDim2.new(1, -20, 1, -110),
+    Position = UDim2.new(0, 10, 0, 100),
+    BackgroundColor3 = C.panel,
+    BorderSizePixel = 0,
+    Parent = tabInicio,
+})
+corner(cardMensaje, 8)
+stroke(cardMensaje, C.stroke, 1)
+
+local msgScroll = create("ScrollingFrame", {
+    Size = UDim2.fromScale(1, 1),
+    BackgroundTransparency = 1,
+    BorderSizePixel = 0,
+    ScrollBarThickness = 4,
+    ScrollBarImageColor3 = C.accent,
+    CanvasSize = UDim2.new(0, 0, 0, 0),
+    AutomaticCanvasSize = Enum.AutomaticSize.Y,
+    Parent = cardMensaje,
+})
+create("UIPadding", {
+    PaddingTop = UDim.new(0, 10),
+    PaddingBottom = UDim.new(0, 10),
+    PaddingLeft = UDim.new(0, 12),
+    PaddingRight = UDim.new(0, 12),
+    Parent = msgScroll,
+})
+
+create("TextLabel", {
+    Size = UDim2.new(1, -8, 0, 0),
+    BackgroundTransparency = 1,
+    Text = "ESTOY APRENDIENDO A CREAR SCRIPT, NO SOY EL MEJOR CREADOR NI HAGO SCRIPT QUE LLAMEN LA ATENCIÓN, PERO JURO QUE ME VOY A CONVERTIR EN EL MEJOR CREADOR DE SCRIPT PARA DELTA.",
+    Font = Enum.Font.GothamMedium,
+    TextSize = 14,
+    TextWrapped = true,
+    TextColor3 = Color3.fromRGB(220, 220, 240),
+    TextXAlignment = Enum.TextXAlignment.Left,
+    TextYAlignment = Enum.TextYAlignment.Top,
+    AutomaticSize = Enum.AutomaticSize.Y,
+    Parent = msgScroll,
+})
+
+-- ══════════════ TAB SERVER HOP ══════════════
+local tabHop = create("Frame", {
+    Size = UDim2.fromScale(1, 1),
+    BackgroundTransparency = 1,
+    Visible = false,
+    Parent = content,
+})
+tabs["Server Hop"] = tabHop
+
+create("TextLabel", {
+    Size = UDim2.new(1, -20, 0, 30),
+    Position = UDim2.new(0, 10, 0, 10),
+    BackgroundTransparency = 1,
+    Text = "🌐  Server Hop",
+    Font = Enum.Font.GothamBold,
+    TextSize = 18,
+    TextColor3 = C.text,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    Parent = tabHop,
+})
+
+create("TextLabel", {
+    Size = UDim2.new(1, -20, 0, 20),
+    Position = UDim2.new(0, 10, 0, 40),
+    BackgroundTransparency = 1,
+    Text = "Busca servidores con 1 jugador y teletransporta automáticamente.",
+    Font = Enum.Font.Gotham,
+    TextSize = 11,
+    TextColor3 = C.sub,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    Parent = tabHop,
+})
+
+create("TextLabel", {
+    Size = UDim2.new(0, 100, 0, 20),
+    Position = UDim2.new(0, 10, 0, 68),
+    BackgroundTransparency = 1,
+    Text = "Región:",
+    Font = Enum.Font.GothamMedium,
+    TextSize = 12,
+    TextColor3 = C.text,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    Parent = tabHop,
+})
+
+local regionBtn = create("TextButton", {
+    Size = UDim2.new(1, -20, 0, 34),
+    Position = UDim2.new(0, 10, 0, 90),
+    BackgroundColor3 = C.panel,
+    BorderSizePixel = 0,
+    Text = REGIONES[1].nombre,
+    Font = Enum.Font.GothamMedium,
+    TextSize = 13,
+    TextColor3 = C.text,
+    AutoButtonColor = false,
+    Parent = tabHop,
+})
+corner(regionBtn, 8)
+stroke(regionBtn, C.stroke, 1)
+
+local regionActual = 1
+local dropdownOpen = false
+local dropdownFrame
+
+local function cerrarDropdown()
+    if dropdownFrame then dropdownFrame:Destroy() dropdownFrame = nil end
+    dropdownOpen = false
+end
+
+local function abrirDropdown()
+    if dropdownOpen then cerrarDropdown() return end
+    dropdownOpen = true
+
+    dropdownFrame = create("Frame", {
+        Size = UDim2.new(1, -20, 0, #REGIONES * 30),
+        Position = UDim2.new(0, 10, 0, 126),
         BackgroundColor3 = C.panel,
         BorderSizePixel = 0,
-        Parent = tabInicio,
-    })
-    corner(cardTikTok, 8)
-    stroke(cardTikTok, C.accent, 1)
-
-    create("TextLabel", {
-        Size = UDim2.fromScale(1, 1),
-        BackgroundTransparency = 1,
-        Text = "🎵  tiktok :  kiritto.hub",
-        Font = Enum.Font.GothamBold,
-        TextSize = 15,
-        TextColor3 = C.text,
-        Parent = cardTikTok,
-    })
-
-    local cardMensaje = create("Frame", {
-        Size = UDim2.new(1, -20, 1, -110),
-        Position = UDim2.new(0, 10, 0, 100),
-        BackgroundColor3 = C.panel,
-        BorderSizePixel = 0,
-        Parent = tabInicio,
-    })
-    corner(cardMensaje, 8)
-    stroke(cardMensaje, C.stroke, 1)
-
-    local msgScroll = create("ScrollingFrame", {
-        Size = UDim2.fromScale(1, 1),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ScrollBarThickness = 4,
-        ScrollBarImageColor3 = C.accent,
-        CanvasSize = UDim2.new(0, 0, 0, 0),
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        Parent = cardMensaje,
-    })
-    create("UIPadding", {
-        PaddingTop = UDim.new(0, 10),
-        PaddingBottom = UDim.new(0, 10),
-        PaddingLeft = UDim.new(0, 12),
-        PaddingRight = UDim.new(0, 12),
-        Parent = msgScroll,
-    })
-
-    create("TextLabel", {
-        Size = UDim2.new(1, -8, 0, 0),
-        BackgroundTransparency = 1,
-        Text = "ESTOY APRENDIENDO A CREAR SCRIPT, NO SOY EL MEJOR CREADOR NI HAGO SCRIPT QUE LLAMEN LA ATENCIÓN, PERO JURO QUE ME VOY A CONVERTIR EN EL MEJOR CREADOR DE SCRIPT PARA DELTA.",
-        Font = Enum.Font.GothamMedium,
-        TextSize = 14,
-        TextWrapped = true,
-        TextColor3 = Color3.fromRGB(220, 220, 240),
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextYAlignment = Enum.TextYAlignment.Top,
-        AutomaticSize = Enum.AutomaticSize.Y,
-        Parent = msgScroll,
-    })
-
-    -- ══════════════ TAB SERVER HOP ══════════════
-    local tabHop = create("Frame", {
-        Size = UDim2.fromScale(1, 1),
-        BackgroundTransparency = 1,
-        Visible = false,
-        Parent = content,
-    })
-    tabs["Server Hop"] = tabHop
-
-    create("TextLabel", {
-        Size = UDim2.new(1, -20, 0, 30),
-        Position = UDim2.new(0, 10, 0, 10),
-        BackgroundTransparency = 1,
-        Text = "🌐  Server Hop",
-        Font = Enum.Font.GothamBold,
-        TextSize = 18,
-        TextColor3 = C.text,
-        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 50,
         Parent = tabHop,
     })
+    corner(dropdownFrame, 8)
+    stroke(dropdownFrame, C.accent, 1)
 
-    create("TextLabel", {
-        Size = UDim2.new(1, -20, 0, 20),
-        Position = UDim2.new(0, 10, 0, 40),
-        BackgroundTransparency = 1,
-        Text = "Busca servidores con 1 jugador y teletransporta automáticamente.",
-        Font = Enum.Font.Gotham,
-        TextSize = 11,
-        TextColor3 = C.sub,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Parent = tabHop,
-    })
-
-    create("TextLabel", {
-        Size = UDim2.new(0, 100, 0, 20),
-        Position = UDim2.new(0, 10, 0, 68),
-        BackgroundTransparency = 1,
-        Text = "Región:",
-        Font = Enum.Font.GothamMedium,
-        TextSize = 12,
-        TextColor3 = C.text,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Parent = tabHop,
-    })
-
-    local regionBtn = create("TextButton", {
-        Size = UDim2.new(1, -20, 0, 34),
-        Position = UDim2.new(0, 10, 0, 90),
-        BackgroundColor3 = C.panel,
-        BorderSizePixel = 0,
-        Text = REGIONES[1].nombre,
-        Font = Enum.Font.GothamMedium,
-        TextSize = 13,
-        TextColor3 = C.text,
-        AutoButtonColor = false,
-        Parent = tabHop,
-    })
-    corner(regionBtn, 8)
-    stroke(regionBtn, C.stroke, 1)
-
-    local regionActual = 1
-    local dropdownOpen = false
-    local dropdownFrame
-
-    local function cerrarDropdown()
-        if dropdownFrame then dropdownFrame:Destroy() dropdownFrame = nil end
-        dropdownOpen = false
-    end
-
-    local function abrirDropdown()
-        if dropdownOpen then cerrarDropdown() return end
-        dropdownOpen = true
-
-        dropdownFrame = create("Frame", {
-            Size = UDim2.new(1, -20, 0, #REGIONES * 30),
-            Position = UDim2.new(0, 10, 0, 126),
+    for i, reg in ipairs(REGIONES) do
+        local opt = create("TextButton", {
+            Size = UDim2.new(1, 0, 0, 30),
+            Position = UDim2.new(0, 0, 0, (i - 1) * 30),
             BackgroundColor3 = C.panel,
+            BackgroundTransparency = 0.3,
             BorderSizePixel = 0,
-            ZIndex = 50,
-            Parent = tabHop,
+            Text = reg.nombre,
+            Font = Enum.Font.Gotham,
+            TextSize = 12,
+            TextColor3 = C.text,
+            AutoButtonColor = false,
+            ZIndex = 51,
+            Parent = dropdownFrame,
         })
-        corner(dropdownFrame, 8)
-        stroke(dropdownFrame, C.accent, 1)
+        opt.MouseEnter:Connect(function()
+            TweenService:Create(opt, TweenInfo.new(0.15), {
+                BackgroundColor3 = C.accent, BackgroundTransparency = 0
+            }):Play()
+        end)
+        opt.MouseLeave:Connect(function()
+            TweenService:Create(opt, TweenInfo.new(0.15), {
+                BackgroundColor3 = C.panel, BackgroundTransparency = 0.3
+            }):Play()
+        end)
+        opt.MouseButton1Click:Connect(function()
+            regionActual = i
+            regionBtn.Text = reg.nombre
+            cerrarDropdown()
+            playSFX(Sonidos.click, 0.2)
+            _G.KirittoNotify("Región", "Cambiada a " .. reg.nombre, "info")
+            escribirArchivo(CONFIG_FILE, tostring(i))
+        end)
+    end
+end
 
-        for i, reg in ipairs(REGIONES) do
-            local opt = create("TextButton", {
-                Size = UDim2.new(1, 0, 0, 30),
-                Position = UDim2.new(0, 0, 0, (i-1)*30),
-                BackgroundColor3 = C.panel,
-                BackgroundTransparency = 0.3,
-                BorderSizePixel = 0,
-                Text = reg.nombre,
-                Font = Enum.Font.Gotham,
-                TextSize = 12,
-                TextColor3 = C.text,
-                AutoButtonColor = false,
-                ZIndex = 51,
-                Parent = dropdownFrame,
-            })
-            opt.MouseEnter:Connect(function()
-                TweenService:Create(opt, TweenInfo.new(0.15), {BackgroundColor3 = C.accent, BackgroundTransparency = 0}):Play()
-            end)
-            opt.MouseLeave:Connect(function()
-                TweenService:Create(opt, TweenInfo.new(0.15), {BackgroundColor3 = C.panel, BackgroundTransparency = 0.3}):Play()
-            end)
-            opt.MouseButton1Click:Connect(function()
-                regionActual = i
-                regionBtn.Text = reg.nombre
-                cerrarDropdown()
-                playSFX(Sonidos.click, 0.2)
-                _G.KirittoNotify("Región", "Cambiada a " .. reg.nombre, "info")
-                escribirArchivo(CONFIG_FILE, tostring(i))
-            end)
+regionBtn.MouseButton1Click:Connect(abrirDropdown)
+
+do
+    local cfg = leerArchivo(CONFIG_FILE)
+    if cfg then
+        local n = tonumber(cfg)
+        if n and REGIONES[n] then
+            regionActual = n
+            regionBtn.Text = REGIONES[n].nombre
         end
     end
-
-    regionBtn.MouseButton1Click:Connect(abrirDropdown)
-
-    do
-        local cfg = leerArchivo(CONFIG_FILE)
-        if cfg then
-            local n = tonumber(cfg)
-            if n and REGIONES[n] then
-                regionActual = n
-                regionBtn.Text = REGIONES[n].nombre
-            end
-        end
-    end
-
+end
+    -- ── Botón principal de Server Hop ────────────────────────
     local hopBtn = create("TextButton", {
         Size = UDim2.new(1, -20, 0, 46),
         Position = UDim2.new(0, 10, 0, 132),
@@ -927,7 +956,7 @@ local function crearUI()
         Parent = tabHop,
     })
 
-    -- ── LÓGICA SERVER HOP ────────────────────────────────────
+    -- ── Lógica Server Hop ────────────────────────────────────
     local buscando = false
     local cancelar = false
 
@@ -1009,7 +1038,7 @@ local function crearUI()
 
                 if intentos > 1 and intentos % SMART_CADA == 0 and maxJugadores < SMART_MAX then
                     maxJugadores += 1
-                    _G.KirittoNotify("Smart Hop", "Ampliando búsqueda a " .. maxJugadores .. " jugadores", "warn")
+                    _G.KirittoNotify("Smart Hop", "Ampliando a " .. maxJugadores .. " jugadores", "warn")
                 end
 
                 hopStatus.Text = string.format(
@@ -1040,7 +1069,7 @@ local function crearUI()
                             elegido.playing, elegido.maxPlayers, elegido.ping or 0
                         )
                         hopBtn.Text = "🚀  TELETRANSPORTANDO..."
-                        _G.KirittoNotify("¡Encontrado!", elegido.playing .. " jugador(es) · " .. regionNombre, "success")
+                        _G.KirittoNotify("¡Encontrado!", elegido.playing .. " jugador(es)", "success")
                         playSFX(Sonidos.exito, 0.4)
                         task.wait(0.7)
 
@@ -1048,8 +1077,8 @@ local function crearUI()
 
                         if not exito then
                             hopStatus.TextColor3 = C.error
-                            hopStatus.Text = "❌ El teletransporte falló. Reintentando con otro servidor..."
-                            _G.KirittoNotify("Error de teleport", "Reintentando con otro servidor...", "error")
+                            hopStatus.Text = "❌ Falló el teleport. Reintentando con otro..."
+                            _G.KirittoNotify("Error", "Reintentando con otro servidor...", "error")
                             playSFX(Sonidos.error, 0.4)
                             task.wait(1)
                         else
@@ -1059,14 +1088,14 @@ local function crearUI()
                     else
                         hopStatus.TextColor3 = C.warn
                         hopStatus.Text = string.format(
-                            "🔄 Sin servidores con ≤%d jugador(es) (intento #%d). Reintentando en %ds...",
+                            "🔄 Sin servidores ≤%d jugador(es) (intento #%d). Reintentando en %ds...",
                             maxJugadores, intentos, espera
                         )
                     end
                 else
                     hopStatus.TextColor3 = C.error
                     hopStatus.Text = string.format(
-                        "❌ Error al consultar la API (intento #%d). Reintentando en %ds...",
+                        "❌ Error consultando API (intento #%d). Reintentando en %ds...",
                         intentos, espera
                     )
                 end
@@ -1080,7 +1109,7 @@ local function crearUI()
             end
 
             hopStatus.TextColor3 = C.sub
-            hopStatus.Text = "⏹ Búsqueda cancelada por el usuario."
+            hopStatus.Text = "⏹ Búsqueda cancelada."
             hopBtn.Text = "🔍  BUSCAR SERVIDOR CON 1 JUGADOR"
             hopBtn.BackgroundColor3 = C.accent
             buscando = false
@@ -1088,6 +1117,7 @@ local function crearUI()
         end)
     end)
 
+    -- ── Crear botones de las pestañas ────────────────────────
     crearBotonTab("Inicio", "🏠  Inicio", 1)
     crearBotonTab("Server Hop", "🌐  Server Hop", 2)
     mostrarTab("Inicio")
@@ -1145,8 +1175,10 @@ local function crearToggle()
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
             if math.abs(delta.X) > 3 or math.abs(delta.Y) > 3 then moved = true end
-            toggleBtn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
-                                            startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            toggleBtn.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
         end
     end)
     UserInputService.InputEnded:Connect(function(input)
@@ -1162,7 +1194,7 @@ local function crearToggle()
             TweenService:Create(mainFrameRef, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
                 Size = UDim2.fromOffset(0, 0)
             }):Play()
-                        task.wait(0.32)
+            task.wait(0.32)
             mainFrameRef:Destroy()
             mainFrameRef = nil
         else
@@ -1185,10 +1217,10 @@ UserInputService.InputBegan:Connect(function(input, gpe)
             task.wait(0.32)
             mainFrameRef:Destroy()
             mainFrameRef = nil
-            _G.KirittoNotify("KIRITTO.HUB", "Menú cerrado · RightShift para abrir", "info")
+            _G.KirittoNotify("KIRITTO.HUB", "Menú cerrado", "info")
         else
             crearUI()
-            _G.KirittoNotify("KIRITTO.HUB", "Menú abierto · RightShift para cerrar", "success")
+            _G.KirittoNotify("KIRITTO.HUB", "Menú abierto", "success")
         end
     end
 end)
@@ -1210,7 +1242,7 @@ local function verificarKey()
         statusKey.TextColor3 = C.success
         statusKey.Text = "✔ Key correcta. Guardando..."
         playSFX(Sonidos.exito, 0.4)
-        _G.KirittoNotify("Key aceptada", "Guardada para futuras sesiones 🌸", "success")
+        _G.KirittoNotify("Key aceptada", "Guardada 🌸", "success")
         task.wait(0.7)
 
         TweenService:Create(keyScreen, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
@@ -1224,11 +1256,13 @@ local function verificarKey()
         statusKey.TextColor3 = C.error
         statusKey.Text = "✖ Key incorrecta. Vuelve a intentarlo."
         playSFX(Sonidos.error, 0.4)
-        _G.KirittoNotify("Key incorrecta", "Verifica tu key e intenta de nuevo.", "error")
+        _G.KirittoNotify("Key incorrecta", "Verifica tu key.", "error")
         local basePos = keyInputBox.Position
         for i = 1, 4 do
             local dx = (i % 2 == 0) and 8 or -8
-            TweenService:Create(keyInputBox, TweenInfo.new(0.05), {Position = UDim2.new(0.5, dx, 0, 105)}):Play()
+            TweenService:Create(keyInputBox, TweenInfo.new(0.05), {
+                Position = UDim2.new(0.5, dx, 0, 105)
+            }):Play()
             task.wait(0.05)
         end
         TweenService:Create(keyInputBox, TweenInfo.new(0.1), {Position = basePos}):Play()
@@ -1259,11 +1293,4 @@ task.spawn(function()
         TweenService:Create(keyBox, TweenInfo.new(0.6, Enum.EasingStyle.Quart), {BackgroundTransparency = 0}):Play()
         TweenService:Create(kbStroke, TweenInfo.new(0.6), {Transparency = 0}):Play()
     end
-end)    else
-        if keyGuardada then borrarKeyGuardada() end
-        keyScreen.Visible = true
-        TweenService:Create(keyScreen, TweenInfo.new(0.5), {BackgroundTransparency = 0}):Play()
-        TweenService:Create(keyBox, TweenInfo.new(0.6, Enum.EasingStyle.Quart), {BackgroundTransparency = 0}):Play()
-        TweenService:Create(kbStroke, TweenInfo.new(0.6), {Transparency = 0}):Play()
-    end        -- 👈 cierra el if/else
-end)           -- 👈 cierra el task.spawn(function()  ← ESTA es tu línea 1262
+end)
